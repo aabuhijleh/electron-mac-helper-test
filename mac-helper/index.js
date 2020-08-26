@@ -1,3 +1,5 @@
 const macHelper = require("bindings")("mac_helper");
 
-module.exports = macHelper;
+console.log(macHelper.areWeOnActiveSpace());
+
+// module.exports = macHelper;
