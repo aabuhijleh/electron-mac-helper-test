@@ -1,9 +1,7 @@
 #import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
 #include <napi.h>
-#include <thread>
 
-std::thread nativeThread;
 Napi::ThreadSafeFunction tsfn;
 
 // Detect if the app's windows are on the active space or not
@@ -32,39 +30,35 @@ void listenForActiveSpaceChange(const Napi::CallbackInfo &info) {
       info[0].As<Napi::Function>(), // JavaScript function called asynchronously
       "Active Space",               // Name
       0,                            // Unlimited queue
-      1,                            // Only one thread will use this initially
-      [](Napi::Env) {               // Finalizer used to clean threads up
-        nativeThread.join();
-      });
+      1                             // Only one thread will use this initially
+  );
 
   // Create a native thread
-  nativeThread = std::thread([] {
-    auto callback = [](Napi::Env env, Napi::Function jsCallback, BOOL *value) {
-      // Call the JS callback
-      jsCallback.Call({Napi::Boolean::New(env, *value)});
+  auto callback = [](Napi::Env env, Napi::Function jsCallback, BOOL *value) {
+    // Call the JS callback
+    jsCallback.Call({Napi::Boolean::New(env, *value)});
 
-      // We're finished with the data.
-      delete value;
-    };
+    // We're finished with the data.
+    delete value;
+  };
 
-    // Subscribe to macOS spaces change event
-    [[[NSWorkspace sharedWorkspace] notificationCenter]
-        addObserverForName:NSWorkspaceActiveSpaceDidChangeNotification
-                    object:NULL
-                     queue:NULL
-                usingBlock:^(NSNotification *note) {
-                  // Create new data
-                  BOOL *hasSwitchedToFullScreenApp =
-                      new BOOL(!areWeOnActiveSpaceNative());
+  // Subscribe to macOS spaces change event
+  [[[NSWorkspace sharedWorkspace] notificationCenter]
+      addObserverForName:NSWorkspaceActiveSpaceDidChangeNotification
+                  object:NULL
+                   queue:NULL
+              usingBlock:^(NSNotification *note) {
+                // Create new data
+                BOOL *hasSwitchedToFullScreenApp =
+                    new BOOL(!areWeOnActiveSpaceNative());
 
-                  // Perform a blocking call
-                  napi_status status =
-                      tsfn.BlockingCall(hasSwitchedToFullScreenApp, callback);
-                  if (status != napi_ok) {
-                    NSLog(@"Something went wrong, BlockingCall failed");
-                  }
-                }];
-  });
+                // Perform a blocking call
+                napi_status status =
+                    tsfn.BlockingCall(hasSwitchedToFullScreenApp, callback);
+                if (status != napi_ok) {
+                  NSLog(@"Something went wrong, BlockingCall failed");
+                }
+              }];
 }
 
 Napi::Object init(Napi::Env env, Napi::Object exports) {
