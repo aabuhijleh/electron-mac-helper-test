@@ -1,15 +1,23 @@
 // Modules to control application life and create native browser window
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow } = require("electron");
 const path = require("path");
 const macHelper = require("mac-helper");
 
-ipcMain.handle("areWeOnActiveSpace", () => {
-  return macHelper.areWeOnActiveSpace();
+let mainWindow;
+
+macHelper.listenForActiveSpaceChange((hasSwitchedToFullScreenApp) => {
+  console.log(
+    `Active space changed - hasSwitchedToFullScreenApp:[${hasSwitchedToFullScreenApp}]`
+  );
+  mainWindow.webContents.send(
+    "ACTIVE_SPACE_CHANGE",
+    hasSwitchedToFullScreenApp
+  );
 });
 
 function createWindow() {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {

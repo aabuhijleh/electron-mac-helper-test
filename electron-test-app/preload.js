@@ -11,10 +11,11 @@ window.addEventListener("DOMContentLoaded", () => {
   for (const type of ["chrome", "node", "electron"]) {
     replaceText(`${type}-version`, process.versions[type]);
   }
+});
 
+ipcRenderer.on("ACTIVE_SPACE_CHANGE", (event, hasSwitchedToFullScreenApp) => {
   const resultEl = document.getElementById("result");
-  setInterval(async () => {
-    const result = await ipcRenderer.invoke("areWeOnActiveSpace");
-    resultEl.innerHTML += result + "<br>";
-  }, 1000);
+  resultEl.innerHTML +=
+    `Active space changed - hasSwitchedToFullScreenApp:[${hasSwitchedToFullScreenApp}]` +
+    "<br>";
 });

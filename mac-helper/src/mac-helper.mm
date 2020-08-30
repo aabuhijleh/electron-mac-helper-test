@@ -1,11 +1,13 @@
 #import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
 #include <napi.h>
+#include <thread>
 
-// detect if our Electron app's windows are on the active space or not
-Napi::String areWeOnActiveSpace(const Napi::CallbackInfo &info) {
-  Napi::Env env = info.Env();
+std::thread nativeThread;
+Napi::ThreadSafeFunction tsfn;
 
+// Detect if the app's windows are on the active space or not
+BOOL areWeOnActiveSpaceNative() {
   BOOL isOnActiveSpace = NO;
   for (NSWindow *window in [NSApp orderedWindows]) {
     isOnActiveSpace = [window isOnActiveSpace];
@@ -13,38 +15,56 @@ Napi::String areWeOnActiveSpace(const Napi::CallbackInfo &info) {
       break;
     }
   }
-
-  return Napi::String::New(env, isOnActiveSpace ? "Yes" : "No");
+  return isOnActiveSpace;
 }
 
-// reference to JS callback
-Napi::FunctionReference cb;
-
-// trigger JS callback
-void triggerCallback() {
-  const Napi::Env env = cb.Env();
-  const Napi::String message = Napi::String::New(env, "space changed");
-  const std::vector<napi_value> args = {message};
-  cb.Call(args);
+Napi::Boolean areWeOnActiveSpace(const Napi::CallbackInfo &info) {
+  return Napi::Boolean::New(info.Env(), areWeOnActiveSpaceNative());
 }
 
-// setup the JS callback to be triggered later
+// Trigger the JS callback when active space changes
 void listenForActiveSpaceChange(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
 
-  cb = Napi::Persistent(info[0].As<Napi::Function>());
-  cb.SuppressDestruct();
+  // Create a ThreadSafeFunction
+  tsfn = Napi::ThreadSafeFunction::New(
+      env,
+      info[0].As<Napi::Function>(), // JavaScript function called asynchronously
+      "Active Space",               // Name
+      0,                            // Unlimited queue
+      1,                            // Only one thread will use this initially
+      [](Napi::Env) {               // Finalizer used to clean threads up
+        nativeThread.join();
+      });
 
-  triggerCallback(); // this works!
+  // Create a native thread
+  nativeThread = std::thread([] {
+    auto callback = [](Napi::Env env, Napi::Function jsCallback, BOOL *value) {
+      // Call the JS callback
+      jsCallback.Call({Napi::Boolean::New(env, *value)});
 
-  // subscribe to macOS spaces change event
-  [[[NSWorkspace sharedWorkspace] notificationCenter]
-      addObserverForName:NSWorkspaceActiveSpaceDidChangeNotification
-                  object:NULL
-                   queue:NULL
-              usingBlock:^(NSNotification *note) {
-                triggerCallback(); // this is never called!
-              }];
+      // We're finished with the data.
+      delete value;
+    };
+
+    // Subscribe to macOS spaces change event
+    [[[NSWorkspace sharedWorkspace] notificationCenter]
+        addObserverForName:NSWorkspaceActiveSpaceDidChangeNotification
+                    object:NULL
+                     queue:NULL
+                usingBlock:^(NSNotification *note) {
+                  // Create new data
+                  BOOL *hasSwitchedToFullScreenApp =
+                      new BOOL(!areWeOnActiveSpaceNative());
+
+                  // Perform a blocking call
+                  napi_status status =
+                      tsfn.BlockingCall(hasSwitchedToFullScreenApp, callback);
+                  if (status != napi_ok) {
+                    NSLog(@"Something went wrong, BlockingCall failed");
+                  }
+                }];
+  });
 }
 
 Napi::Object init(Napi::Env env, Napi::Object exports) {
