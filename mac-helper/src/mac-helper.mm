@@ -33,7 +33,7 @@ void listenForActiveSpaceChange(const Napi::CallbackInfo &info) {
       1                             // Only one thread will use this initially
   );
 
-  // Create a native thread
+  // Create a native callback function to be invoked by the TSFN
   auto callback = [](Napi::Env env, Napi::Function jsCallback, BOOL *value) {
     // Call the JS callback
     jsCallback.Call({Napi::Boolean::New(env, *value)});
