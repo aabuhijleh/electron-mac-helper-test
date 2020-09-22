@@ -1,9 +1,18 @@
 // Modules to control application life and create native browser window
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 const macHelper = require("mac-helper");
 
 let mainWindow;
+
+ipcMain.on("handleHighlightClick", (event, sourceId) => {
+  console.log("[main] handleHighlightClick", sourceId);
+  macHelper.startHighlighting(Number.parseInt(sourceId, 10));
+
+  setTimeout(() => {
+    macHelper.stopHighlighting();
+  }, 5000);
+});
 
 macHelper.listenForActiveSpaceChange((hasSwitchedToFullScreenApp) => {
   console.log(

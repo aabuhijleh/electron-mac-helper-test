@@ -1,8 +1,11 @@
+#import "OSXAppHidhtlightDeledate.h"
 #import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
 #include <napi.h>
 
 Napi::ThreadSafeFunction tsfn;
+
+OSXAppHidhtlightDeledate *highlighter;
 
 // Detect if the app's windows are on the active space or not
 BOOL areWeOnActiveSpaceNative() {
@@ -57,9 +60,33 @@ void listenForActiveSpaceChange(const Napi::CallbackInfo &info) {
               }];
 }
 
+void startHighlighting(const Napi::CallbackInfo &info) {
+  NSLog(@"startHighlighting");
+
+  Napi::Env env = info.Env();
+
+  long sourceId = info[0].As<Napi::Number>().Int32Value();
+
+  highlighter = [[OSXAppHidhtlightDeledate alloc] initWithWindowId:sourceId];
+  [highlighter show];
+}
+
+void stopHighlighting(const Napi::CallbackInfo &info) {
+  NSLog(@"stopHighlighting");
+
+  [highlighter end];
+  [highlighter release];
+}
+
 Napi::Object init(Napi::Env env, Napi::Object exports) {
   exports.Set(Napi::String::New(env, "listenForActiveSpaceChange"),
               Napi::Function::New(env, listenForActiveSpaceChange));
+
+  exports.Set(Napi::String::New(env, "startHighlighting"),
+              Napi::Function::New(env, startHighlighting));
+
+  exports.Set(Napi::String::New(env, "stopHighlighting"),
+              Napi::Function::New(env, stopHighlighting));
 
   return exports;
 };

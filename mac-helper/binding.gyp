@@ -9,7 +9,7 @@
       "target_name": "mac_helper",
       "conditions":[
         ["OS=='mac'", {
-          "sources": [ "src/mac-helper.mm" ],
+          "sources": [ "src/mac-helper.mm", "src/OSXAppHidhtlightDeledate.mm" ],
           "xcode_settings": {
             "OTHER_CPLUSPLUSFLAGS": ["-std=c++11", "-stdlib=libc++", "-mmacosx-version-min=10.10"],
             "OTHER_LDFLAGS": ["-framework CoreFoundation -framework IOKit -framework AppKit"]
