@@ -9,9 +9,10 @@ ipcMain.on("handleHighlightClick", (event, sourceId) => {
   console.log("[main] handleHighlightClick", sourceId);
   macHelper.startHighlighting(Number.parseInt(sourceId, 10));
 
+  // stop highlighting after some time
   setTimeout(() => {
     macHelper.stopHighlighting();
-  }, 5000);
+  }, 1000 * 60 * 60);
 });
 
 macHelper.listenForActiveSpaceChange((hasSwitchedToFullScreenApp) => {
