@@ -7,11 +7,18 @@
         "<!@(node -p \"require('node-addon-api').include\")"
       ],
       "target_name": "mac_helper",
-      "sources": [ "src/mac-helper.mm" ],
-      "xcode_settings": {
-        "OTHER_CPLUSPLUSFLAGS": ["-std=c++11", "-stdlib=libc++", "-mmacosx-version-min=10.10"],
-        "OTHER_LDFLAGS": ["-framework CoreFoundation -framework IOKit -framework AppKit"]
-      },
+      "conditions":[
+        ["OS=='mac'", {
+          "sources": [ "src/mac-helper.mm" ],
+          "xcode_settings": {
+            "OTHER_CPLUSPLUSFLAGS": ["-std=c++11", "-stdlib=libc++", "-mmacosx-version-min=10.10"],
+            "OTHER_LDFLAGS": ["-framework CoreFoundation -framework IOKit -framework AppKit"]
+          },
+        }],
+        ["OS!='mac'", {
+            "sources": ["src/mac-helper-noop.cc"]
+        }]
+      ],
       'defines': [ 'NAPI_DISABLE_CPP_EXCEPTIONS' ]
     }
   ]

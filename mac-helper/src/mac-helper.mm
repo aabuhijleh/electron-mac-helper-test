@@ -16,10 +16,6 @@ BOOL areWeOnActiveSpaceNative() {
   return isOnActiveSpace;
 }
 
-Napi::Boolean areWeOnActiveSpace(const Napi::CallbackInfo &info) {
-  return Napi::Boolean::New(info.Env(), areWeOnActiveSpaceNative());
-}
-
 // Trigger the JS callback when active space changes
 void listenForActiveSpaceChange(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
@@ -62,9 +58,6 @@ void listenForActiveSpaceChange(const Napi::CallbackInfo &info) {
 }
 
 Napi::Object init(Napi::Env env, Napi::Object exports) {
-  exports.Set(Napi::String::New(env, "areWeOnActiveSpace"),
-              Napi::Function::New(env, areWeOnActiveSpace));
-
   exports.Set(Napi::String::New(env, "listenForActiveSpaceChange"),
               Napi::Function::New(env, listenForActiveSpaceChange));
 

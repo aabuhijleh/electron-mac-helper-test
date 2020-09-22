@@ -1,14 +1,11 @@
 const macHelper = require("bindings")("mac_helper");
 
-// How to use?
+/* 
+Example usage:
 
-// macHelper.areWeOnActiveSpace(); // true if at least one of your app's windows is on the active space
-
-// Active space changes callback
 // macHelper.listenForActiveSpaceChange((hasSwitchedToFullScreenApp) => {
-//   console.log(
-//     `Active space changed - hasSwitchedToFullScreenApp:[${hasSwitchedToFullScreenApp}]`
-//   );
+//   // Do something
 // });
+*/
 
 module.exports = macHelper;
